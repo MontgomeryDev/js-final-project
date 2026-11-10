@@ -34,6 +34,8 @@
 //   console.log(movies);
 // });
 
+const moviesGrid = document.getElementById("moviesGrid");
+const loadingSpinner = document.getElementById("loadingSpinner");
 // Get HTML elements
 const searchForm = document.getElementById("searchForm");
 const searchInput = document.getElementById("searchInput");
@@ -77,14 +79,32 @@ async function fetchMovies(title) {
   return movieResults;
 }
 
+
+function showLoading() {
+  loadingSpinner.hidden = false;
+  moviesGrid.hidden = true;
+}
+
+function hideLoading() {
+  loadingSpinner.hidden = true;
+  moviesGrid.hidden = false;
+}
+
 // Sort movies based on selected option
 function sortMovies(movieList, sortBy) {
   // Copy array so original isn't modified
   const sorted = [...movieList];
 
-  if (sortBy === "title") {
+  if (sortBy === "a-z") {
     // Alphabetical A-Z
     sorted.sort((a, b) =>
+      a.title.localeCompare(b.title)
+    );
+  }
+
+  if (sortBy === "z-a") {
+    // Alphabetical Z-A
+    sorted.sort((b, a) =>
       a.title.localeCompare(b.title)
     );
   }
@@ -99,6 +119,13 @@ function sortMovies(movieList, sortBy) {
   if (sortBy === "oldest") {
     // Oldest first
     sorted.sort((a, b) =>
+      parseInt(a.year, 10) - parseInt(b.year, 10)
+    );
+  }
+
+    if (sortBy === "newest") {
+    // Oldest first
+    sorted.sort((b, a) =>
       parseInt(a.year, 10) - parseInt(b.year, 10)
     );
   }
@@ -175,9 +202,58 @@ function displayMovies(movies) {
   }).join("");
 }
 
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 // Handle search form submission
-searchForm.addEventListener("submit", async (event) => {
-  // Prevent page refresh
+// searchForm.addEventListener("submit", async (event) => {
+//   // Prevent page refresh
+//   event.preventDefault();
+
+//   const title = searchInput.value.trim();
+
+//   if (!title) return;
+
+//   searchMovies(title);
+
+//   // Show loading message
+//   message.textContent = "Loading movies...";
+//   moviesGrid.innerHTML = "";
+
+//   try {
+//     // Fetch movies
+//     const results = await fetchMovies(title);
+
+//     // Ignore results from an outdated search
+//     if (currentSearch !== searchId) return;
+
+//     // Save movies
+//     movies = results;
+
+//     // Sort using current dropdown selection
+//     const sortedMovies = sortMovies(movies, sortSelect.value);
+
+//     // Display results
+//     displayMovies(sortedMovies);
+
+//     message.textContent = `${movies.length} movies found`;
+
+//   } catch (error) {
+//     if (currentSearch !== searchId) return;
+
+//     console.error("Error fetching movies:", error);
+
+//     movies = [];
+//     moviesGrid.innerHTML = "";
+
+//     message.textContent = error.message;
+//   }
+// });
+
+searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const title = searchInput.value.trim();
@@ -185,39 +261,6 @@ searchForm.addEventListener("submit", async (event) => {
   if (!title) return;
 
   searchMovies(title);
-
-  // Show loading message
-  message.textContent = "Loading movies...";
-  moviesGrid.innerHTML = "";
-
-  try {
-    // Fetch movies
-    const results = await fetchMovies(title);
-
-    // Ignore results from an outdated search
-    if (currentSearch !== searchId) return;
-
-    // Save movies
-    movies = results;
-
-    // Sort using current dropdown selection
-    const sortedMovies = sortMovies(movies, sortSelect.value);
-
-    // Display results
-    displayMovies(sortedMovies);
-
-    message.textContent = `${movies.length} movies found`;
-
-  } catch (error) {
-    if (currentSearch !== searchId) return;
-
-    console.error("Error fetching movies:", error);
-
-    movies = [];
-    moviesGrid.innerHTML = "";
-
-    message.textContent = error.message;
-  }
 });
 
 // Handle sorting dropdown changes
@@ -227,4 +270,76 @@ sortSelect.addEventListener("change", () => {
   displayMovies(sortedMovies);
 });
 
-searchMovies("title");
+async function searchMovies(title) {
+//   searchId++;
+//   const currentSearch = searchId;
+
+//   message.textContent = "Loading movies...";
+//   movieContainer.innerHTML = "";
+
+//   try {
+//     const results = await fetchMovies(title);
+//     if (currentSearch !== searchId) return;
+
+//     movies = results;
+//     displayMovies(sortMovies(movies, sortSelect.value));
+//     message.textContent = `${movies.length} movies found`;
+//   } catch (err) {
+//     if (currentSearch !== searchId) return;
+//     movies = [];
+//     movieContainer.innerHTML = "";
+//     message.textContent = err.message;
+//   }
+// }
+
+// searchForm.addEventListener("submit", (event) => {
+//   event.preventDefault();
+//   const title = searchInput.value.trim();
+//   if (!title) return;
+//   searchMovies(title);
+
+  const currentSearch = ++searchId;
+
+  showLoading();
+
+  resultsInfo.textContent = `Searching for: ${title}...`;
+
+  try {
+  const [results] = await Promise.all([
+  fetchMovies(title),
+  delay(1500)
+  ]);
+
+    // Ignore outdated search results
+    if (currentSearch !== searchId) return;
+
+    movies = results;
+
+    const sortedMovies = sortMovies(
+      movies,
+      sortSelect.value
+    );
+
+    displayMovies(sortedMovies);
+
+    resultsInfo.textContent =
+      `Showing: ${title} (${movies.length} results)`;
+
+  } catch (error) {
+    if (currentSearch !== searchId) return;
+
+    console.error("Error fetching movies:", error);
+
+    movies = [];
+    moviesGrid.innerHTML = "";
+    resultsInfo.textContent = error.message;
+
+  } finally {
+    // Only the latest search controls the spinner
+    if (currentSearch === searchId) {
+      hideLoading();
+    }
+  }
+};
+
+searchMovies("marvel");

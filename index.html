@@ -48,6 +48,7 @@
 
     <main>
       <div class="controls">
+        <p id="message"></p>
         <p id="resultsInfo" class="resultsInfo"><span>Showing: </span>Marvel</p>
         <div>
           <label for="sortSelect">Sort:</label>
@@ -60,6 +61,13 @@
           </select>
         </div>
       </div>
+
+  <div id="loadingSpinner" class="loading-container" hidden>
+  <div class="spinner"></div>
+  <p>Loading movies...</p>
+  </div>
+
+<div class="movies-grid" id="moviesGrid"></div>
 
       <div class="movies-grid" id="moviesGrid">
         <!-- this is where the search results are displayed -->
